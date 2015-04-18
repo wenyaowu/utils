@@ -3,7 +3,7 @@ from mysql.connector import Error, MySQLConnection
 from python_mysql_dbconfig import read_db_config
 
 
-def connect():
+def connection_test():
 
     db_config = read_db_config()
 
@@ -24,7 +24,7 @@ def connect():
         print 'Connection closed.'
 
 
-def connect2():
+def connect():
 
     db_config = read_db_config()
 
@@ -45,7 +45,7 @@ def connect2():
 
 def query_with_fetchone(query):
 
-    conn = connect2()
+    conn = connect()
     cursor = conn.cursor()
     cursor.execute(query)
 
@@ -62,7 +62,7 @@ def query_with_fetchone(query):
 
 def query_with_fetchall(query):
 
-    conn = connect2()
+    conn = connect()
     cursor = conn.cursor()
     cursor.execute(query)
     rows = cursor.fetchall()
@@ -86,12 +86,62 @@ def iter_row(cursor, size):
 
 def query_with_fetchmany(query, size=10):
 
-    conn = connect2()
+    conn = connect()
     cursor = conn.cursor()
     cursor.execute(query)
 
     for row in iter_row(cursor, size):
         print(row)
+
+    cursor.close()
+    conn.close()
+
+
+def query_insert(table, query_dict):
+
+    columns = query_dict.keys()
+    args = tuple(query_dict.values())
+    query = 'INSERT INTO '+table+'('+','.join(columns)+') '\
+    + 'VALUES' + '(' +','.join(['%s' for i in range(len(columns))])+ ')'
+
+    query_print = 'INSERT INTO '+table+'('+','.join(columns)+') '\
+    + 'VALUES' + '(' +','.join(args)+ ')'
+    print('executing: '+ query_print)
+
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute(query, args)
+
+    if cursor.lastrowid:
+        print 'Last insert ID:' + str(cursor.lastrowid)
+    else:
+        print 'Last insert ID not found'
+
+    conn.commit()
+
+    cursor.close()
+    conn.close()
+
+def query_insertmany(table, columns, value_list):
+
+    query = 'INSERT INTO '+table+'('+','.join(columns)+') '\
+    + 'VALUES' + '(' +','.join(['%s' for i in range(len(columns))])+ ')'
+
+    print query
+    if value_list:
+        value_s = str(value_list[0])
+    for i in range(1,len(value_list)):
+        value_s += (','+str(value_list[i]))
+
+    query_print = 'INSERT INTO '+table+'('+','.join(columns)+') '\
+    + 'VALUES' + value_s
+    print('executing: '+query_print)
+
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.executemany(query, value_list)
+
+    conn.commit()
 
     cursor.close()
     conn.close()
